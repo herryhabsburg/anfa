@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum StockType {
+  IN
+  OUT
+  RETURN
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  assets Asset[]
+}
+
+model Asset {
+  id          String   @id @default(cuid())
+  name        String
+  modelOrSpec String?
+  unit        String?
+  photoUrl    String?
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  createdAt    DateTime @default(now())
+  transactions StockTransaction[]
+
+  @@index([categoryId])
+}
+
+model StockTransaction {
+  id       String @id @default(cuid())
+
+  assetId  String
+  asset    Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  type     StockType
+  quantity Float
+
+  operator String?
+  note     String?
+  createdAt DateTime @default(now())
+
+  @@index([assetId, createdAt])
+}
