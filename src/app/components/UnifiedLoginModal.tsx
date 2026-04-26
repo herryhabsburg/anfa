@@ -38,6 +38,8 @@ export default function UnifiedLoginModal({
       onClose();
       setStudentId("");
       setPassword("");
+      // 跳转到首页并刷新
+      router.push("/");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "登录失败");
