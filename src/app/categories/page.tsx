@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type Category = { id: string; name: string; createdAt: string };
 
 export default function CategoriesPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [name, setName] = useState("");
@@ -145,11 +147,20 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold">分类管理</h2>
-        <div className="text-sm text-zinc-500 mt-1">
-          {canEdit ? "新增、编辑、删除物资分类" : "普通用户仅可查看物资分类"}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">分类管理</h2>
+          <div className="text-sm text-zinc-500 mt-1">
+            {canEdit ? "新增、编辑、删除物资分类" : "普通用户仅可查看物资分类"}
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-2 text-sm hover:bg-zinc-50 transition-colors"
+        >
+          ← 返回
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -240,7 +251,7 @@ export default function CategoriesPage() {
                   <div className="flex items-center gap-3">
                     <button
                       type="submit"
-                      className="rounded-xl bg-zinc-900 text-white px-4 py-2 text-sm hover:bg-zinc-800 transition-colors"
+                      className="rounded-xl bg-blue-700 text-white px-4 py-2 text-sm hover:bg-blue-800 transition-colors"
                     >
                       {editingId ? "保存修改" : "新增"}
                     </button>
@@ -267,7 +278,7 @@ export default function CategoriesPage() {
                 <div>
                   <Link
                     href="/login"
-                    className="inline-flex items-center rounded-xl bg-zinc-900 text-white px-4 py-2 text-sm hover:bg-zinc-800 transition-colors"
+                    className="inline-flex items-center rounded-xl bg-blue-700 text-white px-4 py-2 text-sm hover:bg-blue-800 transition-colors"
                   >
                     管理员登录
                   </Link>

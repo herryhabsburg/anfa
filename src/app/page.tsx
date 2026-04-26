@@ -1,248 +1,170 @@
 "use client";
-
 import Link from "next/link";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { DEPARTMENTS, type Department } from "@/lib/student-union";
 
-type Category = { id: string; name: string; createdAt: string };
-type Asset = {
+type Notice = {
   id: string;
-  name: string;
-  modelOrSpec: string | null;
-  unit: string | null;
-  categoryId: string;
-  createdAt: string;
-  category?: { id: string; name: string } | null;
+  title: string;
+  publishedAt: string; // ISO
+  content: string;
 };
 
-type StockResp = { assetId: string; stock: number };
-
 export default function Home() {
+  const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
-  const [categoryCount, setCategoryCount] = useState(0);
-  const [assetCount, setAssetCount] = useState(0);
-  const [stocks, setStocks] = useState<Array<{ asset: Asset; stock: number }>>([]);
-  const [stockPage, setStockPage] = useState(1);
-  const stockPageSize = 10;
-
-  const logoInputId = useId();
-  const [logoUploading, setLogoUploading] = useState(false);
-  const [logoError, setLogoError] = useState<string | null>(null);
-  const [logoBuster, setLogoBuster] = useState(() => Date.now());
 
   useEffect(() => {
     let cancelled = false;
     async function run() {
       setLoading(true);
       try {
-        const [catsRes, assetsRes] = await Promise.all([fetch("/api/categories"), fetch("/api/assets")]);
-
-        const categories: Category[] = await catsRes.json();
-        const assets: Asset[] = await assetsRes.json();
-
+        const res = await fetch("/api/notices");
+        const data = await res.json().catch(() => ({}));
         if (cancelled) return;
-
-        setCategoryCount(categories.length);
-        setAssetCount(assets.length);
-
-        const stockList: StockResp[] = await Promise.all(
-          assets.map((a) => fetch(`/api/assets/${a.id}/stock`).then((r) => r.json())),
-        );
-
-        if (cancelled) return;
-
-        setStocks(
-          assets.map((a) => ({
-            asset: a,
-            stock: stockList.find((s) => s.assetId === a.id)?.stock ?? 0,
-          })),
-        );
+        if (!res.ok) throw new Error(data?.error ?? "加载公告失败");
+        setNotices((data.notices ?? []) as Notice[]);
+      } catch {
+        if (!cancelled) setNotices([]);
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
-
     run();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const sortStocks = useMemo(() => {
-    return [...stocks].sort((a, b) => a.stock - b.stock);
-  }, [stocks]);
-
-  const stockTotalPages = useMemo(() => {
-    return Math.max(1, Math.ceil(sortStocks.length / stockPageSize));
-  }, [sortStocks.length]);
-
-  const stockPageRows = useMemo(() => {
-    const start = (stockPage - 1) * stockPageSize;
-    return sortStocks.slice(start, start + stockPageSize);
-  }, [sortStocks, stockPage]);
-
-  useEffect(() => {
-    if (stockPage > stockTotalPages) {
-      setStockPage(stockTotalPages);
-    }
-  }, [stockPage, stockTotalPages]);
+  const latestNotices = useMemo(() => {
+    return [...notices].slice(0, 3);
+  }, [notices]);
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl bg-white border border-zinc-200 shadow-sm overflow-hidden">
-        <div className="p-5 flex items-center gap-4">
-          <div className="flex flex-col items-center">
-            <input
-              id={logoInputId}
-              className="sr-only"
-              type="file"
-              accept="image/*"
-              onChange={async (e) => {
-                const f = e.target.files?.[0] ?? null;
-                if (!f) return;
-                setLogoError(null);
-                setLogoUploading(true);
-                try {
-                  const fd = new FormData();
-                  fd.append("logo", f);
-                  const res = await fetch("/api/college-logo", { method: "POST", body: fd });
-                  const data = await res.json().catch(() => ({}));
-                  if (!res.ok) throw new Error(data?.error ?? "上传失败");
-                  setLogoBuster(Date.now());
-                } catch (err) {
-                  setLogoError(err instanceof Error ? err.message : "上传失败");
-                } finally {
-                  setLogoUploading(false);
-                }
-              }}
-            />
-
-            <label htmlFor={logoInputId} className="cursor-pointer" title="点击上传院徽（可更换）">
-              <img
-                src={`/api/college-logo?bust=${logoBuster}`}
-                alt="安法学院院徽（点击可上传）"
-                className="w-14 h-14 rounded-2xl border border-zinc-200 bg-zinc-50 object-contain"
-                referrerPolicy="no-referrer"
-              />
-            </label>
-
-            <div className="mt-2 text-[11px] text-zinc-500 leading-tight">
-              {logoUploading ? "上传中…" : "点击院徽上传"}
-            </div>
-
-            {logoError ? (
-              <div className="mt-1 text-[11px] text-red-600 leading-tight">{logoError}</div>
-            ) : null}
-          </div>
-          <div className="min-w-0">
-            <div className="text-base font-semibold text-zinc-950">重庆邮电大学安法学院办公室物资管理</div>
-            <div className="text-sm text-zinc-500 mt-1">物资分类、入库、领用、归还与库存流水一站式管理</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-2xl bg-white border border-zinc-200 p-5 shadow-sm">
-          <div className="text-xs text-zinc-500">物资分类</div>
-          <div className="mt-2 text-3xl font-semibold text-zinc-950">{categoryCount}</div>
-        </div>
-        <div className="rounded-2xl bg-white border border-zinc-200 p-5 shadow-sm">
-          <div className="text-xs text-zinc-500">物资档案</div>
-          <div className="mt-2 text-3xl font-semibold text-zinc-950">{assetCount}</div>
-        </div>
-        <div className="rounded-2xl bg-white border border-zinc-200 p-5 shadow-sm">
-          <div className="text-xs text-zinc-500">重点关注（低库存）</div>
-          <div className="mt-2 text-3xl font-semibold text-zinc-950">
-            {sortStocks.filter((s) => s.stock <= 0).length}
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-2xl bg-white border border-zinc-200 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-zinc-200 flex items-start justify-between gap-4">
-          <div>
-            <div className="text-sm text-zinc-500">物资库存概览</div>
-            <div className="text-base font-semibold mt-1">按库存从低到高展示（全部物资）</div>
-          </div>
-          <Link
-            href="/assets"
-            className="text-sm px-3 py-2 rounded-full border border-zinc-200 hover:bg-zinc-50 transition-colors"
-          >
-            去物资管理
-          </Link>
-        </div>
-
-        {loading ? (
-          <div className="p-5 text-sm text-zinc-500">加载中…</div>
-        ) : sortStocks.length === 0 ? (
-          <div className="p-5 text-sm text-zinc-500">暂无物资记录</div>
-        ) : (
-          <div className="p-5">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="text-xs text-zinc-500">共 {sortStocks.length} 条物资记录</div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setStockPage((p) => Math.max(1, p - 1))}
-                  disabled={stockPage <= 1}
-                  className="text-xs px-2 py-1 rounded-md border border-zinc-200 hover:bg-zinc-50 disabled:opacity-60"
-                >
-                  上一页
-                </button>
-                <div className="text-xs text-zinc-600">
-                  第 {stockPage}/{stockTotalPages} 页
+      <section className="rounded-2xl overflow-hidden border border-zinc-200 bg-white shadow-sm">
+        <div className="p-6 sm:p-10 bg-gradient-to-r from-blue-700 to-green-500 text-white">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0">
+                <img
+                  src="/图片1.png"
+                  alt="网络空间安全与信息法学院院徽"
+                  className="w-16 h-16 object-contain"
+                />
+              </div>
+              <div className="max-w-2xl">
+                <div className="text-xs opacity-90 tracking-wide">重庆邮电大学 · 网络空间安全与信息法学院</div>
+                <h2 className="mt-3 text-2xl sm:text-3xl font-semibold leading-tight">学生会官方网站</h2>
+                <p className="mt-2 text-sm sm:text-base opacity-95 leading-relaxed">以服务同学为宗旨，共建更美校园。</p>
+                <div className="mt-3 text-sm sm:text-base opacity-90 leading-relaxed italic">法安天下，德润人心</div>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <Link
+                    href="/departments"
+                    className="inline-flex items-center justify-center rounded-xl bg-white text-blue-700 px-5 py-2 text-sm font-medium hover:bg-zinc-100 transition-colors"
+                  >
+                    部门介绍
+                  </Link>
+                  <Link
+                    href="/notices"
+                    className="inline-flex items-center justify-center rounded-xl border border-white/70 text-white px-5 py-2 text-sm hover:bg-white/10 transition-colors"
+                  >
+                    通知公告
+                  </Link>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setStockPage((p) => Math.min(stockTotalPages, p + 1))}
-                  disabled={stockPage >= stockTotalPages}
-                  className="text-xs px-2 py-1 rounded-md border border-zinc-200 hover:bg-zinc-50 disabled:opacity-60"
-                >
-                  下一页
-                </button>
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="text-left text-zinc-500">
-                  <tr>
-                    <th className="py-2 pr-3 font-medium">物资名称</th>
-                    <th className="py-2 pr-3 font-medium">分类</th>
-                    <th className="py-2 pr-3 font-medium">当前库存</th>
-                    <th className="py-2 font-medium">操作</th>
-                  </tr>
-                </thead>
-                <tbody className="text-zinc-900">
-                  {stockPageRows.map((row) => (
-                    <tr key={row.asset.id} className="border-t border-zinc-100">
-                      <td className="py-3 pr-3">
-                        <div className="font-medium">{row.asset.name}</div>
-                        {row.asset.modelOrSpec ? (
-                          <div className="text-xs text-zinc-500">规格：{row.asset.modelOrSpec}</div>
-                        ) : null}
-                      </td>
-                      <td className="py-3 pr-3 text-zinc-600">{row.asset.category?.name ?? "-"}</td>
-                      <td className="py-3 pr-3">
-                        <span className={row.stock <= 0 ? "text-red-600 font-semibold" : ""}>
-                          {row.stock}
-                          {row.asset.unit ? ` ${row.asset.unit}` : ""}
-                        </span>
-                      </td>
-                      <td className="py-3">
-                        <Link
-                          href={`/assets/${row.asset.id}`}
-                          className="text-xs px-2 py-1 rounded-md border border-zinc-200 hover:bg-zinc-50"
-                        >
-                          查看详情
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-2xl bg-white border border-zinc-200 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-zinc-200">
+          <div className="text-sm text-zinc-500">部门快捷入口</div>
+          <div className="text-base font-semibold mt-1">9 个部门 · 点击进入独立页面</div>
+        </div>
+        <div className="p-5">
+          <div className="mb-6 flex justify-center">
+            <Link
+              key="chairman"
+              href="/departments/chairman"
+              className="rounded-2xl border-2 border-blue-200 p-5 hover:border-blue-400 transition-colors bg-gradient-to-b from-blue-50 to-white min-w-[280px] text-center"
+            >
+              <div className="text-sm text-blue-700 font-semibold">{DEPARTMENTS[0].shortName}</div>
+              <div className="mt-2 font-semibold text-zinc-950">{DEPARTMENTS[0].name}</div>
+              <div className="mt-2 text-sm text-zinc-500 leading-relaxed">{DEPARTMENTS[0].description}</div>
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {DEPARTMENTS.slice(1).map((d: Department) => (
+              <Link
+                key={d.slug}
+                href={`/departments/${d.slug}`}
+                className="rounded-2xl border border-zinc-200 p-5 hover:border-blue-200 transition-colors bg-gradient-to-b from-white to-zinc-50"
+              >
+                <div className="text-sm text-blue-700 font-semibold">{d.shortName}</div>
+                <div className="mt-2 font-semibold text-zinc-950">{d.name}</div>
+                <div className="mt-2 text-sm text-zinc-500 leading-relaxed">{d.description}</div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="rounded-2xl bg-white border border-zinc-200 shadow-sm overflow-hidden lg:col-span-2">
+          <div className="p-5 border-b border-zinc-200">
+            <div className="text-sm font-semibold">最新通知</div>
+            <div className="text-xs text-zinc-500 mt-1">及时掌握学生会动态</div>
+          </div>
+          <div className="p-5">
+            <div className="space-y-3">
+              {loading ? (
+                <div className="text-sm text-zinc-500">加载中…</div>
+              ) : latestNotices.length === 0 ? (
+                <div className="text-sm text-zinc-500">暂无通知</div>
+              ) : (
+                latestNotices.map((n) => (
+                  <Link
+                    key={n.id}
+                    href="/notices"
+                    className="block rounded-xl border border-zinc-200 hover:border-blue-200 transition-colors p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-xs text-zinc-500">
+                          {new Date(n.publishedAt).toLocaleDateString("zh-CN")}
+                        </div>
+                        <div className="mt-1 font-semibold text-zinc-950">{n.title}</div>
+                        <div className="mt-1 text-sm text-zinc-500 leading-relaxed">
+                          {(n.content ?? "").slice(0, 60)}
+                          {(n.content ?? "").length > 60 ? "…" : ""}
+                        </div>
+                      </div>
+                      <div className="text-xs text-blue-700 whitespace-nowrap">查看</div>
+                    </div>
+                  </Link>
+                ))
+              )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+
+        <div className="rounded-2xl bg-white border border-zinc-200 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-zinc-200">
+            <div className="text-sm font-semibold">学生会简介</div>
+          </div>
+          <div className="p-5 text-sm text-zinc-700 space-y-3 leading-relaxed">
+            <p>我们以服务同学为宗旨，凝聚青年力量，围绕学习成长、文化活动与权益保障开展工作。</p>
+            <p>通过部门协同与规范化运营，持续提升活动质量与服务效率，打造简洁高效的学生组织形象。</p>
+            <div className="pt-2">
+              <Link href="/intro" className="text-blue-700 hover:underline">
+                了解更多
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

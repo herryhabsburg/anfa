@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type StockType = "IN" | "OUT" | "RETURN";
 
@@ -22,6 +23,7 @@ type Transaction = {
 };
 
 export default function StockInPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,9 +59,18 @@ export default function StockInPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold">入库记录</h2>
-        <div className="text-sm text-zinc-500 mt-1">展示所有“入库(IN)”流水（支持分页）</div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">入库记录</h2>
+          <div className="text-sm text-zinc-500 mt-1">展示所有“入库(IN)”流水（支持分页）</div>
+        </div>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-2 text-sm hover:bg-zinc-50 transition-colors"
+        >
+          ← 返回
+        </button>
       </div>
 
       <section className="rounded-2xl bg-white border border-zinc-200 shadow-sm overflow-hidden">

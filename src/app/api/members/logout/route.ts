@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { ROLE_COOKIE_NAME, MEMBER_ID_COOKIE_NAME } from "@/lib/auth";
+import { MEMBER_ID_COOKIE_NAME } from "@/lib/member-auth";
 
 export async function POST() {
   const res = NextResponse.json({ ok: true });
-  res.cookies.delete(ROLE_COOKIE_NAME);
   res.cookies.delete(MEMBER_ID_COOKIE_NAME);
   return res;
 }
+

@@ -57,3 +57,31 @@ model StockTransaction {
 
   @@index([assetId, createdAt])
 }
+
+model Notice {
+  id          String   @id @default(cuid())
+  title       String
+  publishedAt DateTime
+  content     String
+  department  String
+  authorName  String
+  authorStudentId String
+  expireAt    DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([publishedAt])
+  @@index([expireAt])
+}
+
+model Member {
+  studentId   String   @id
+  name        String
+  position    String
+  department  String
+  passwordHash String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([department])
+}

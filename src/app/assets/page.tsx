@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, useId, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 
 type Category = { id: string; name: string; createdAt: string };
 type Asset = {
@@ -18,6 +19,7 @@ type Asset = {
 type Role = "admin" | "user";
 
 export default function AssetsPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -243,11 +245,20 @@ export default function AssetsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold">物资管理</h2>
-        <div className="text-sm text-zinc-500 mt-1">
-          {canEdit ? "物资档案新增、编辑、删除；支持按名称与分类搜索" : "普通用户仅可查看；支持按名称与分类搜索"}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">物资管理</h2>
+          <div className="text-sm text-zinc-500 mt-1">
+            {canEdit ? "物资档案新增、编辑、删除；支持按名称与分类搜索" : "普通用户仅可查看；支持按名称与分类搜索"}
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-2 text-sm hover:bg-zinc-50 transition-colors"
+        >
+          ← 返回
+        </button>
       </div>
 
       <section className="rounded-2xl bg-white border border-zinc-200 shadow-sm overflow-hidden">
