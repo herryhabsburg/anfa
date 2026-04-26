@@ -24,19 +24,19 @@ const newAssets = [
   { name: "白色安法长袖", quantity: 50 },
   { name: "红色志愿马甲", quantity: 103 },
   { name: "安法学院院徽（亚克力）", quantity: 17 },
-  { name: "气球", quantity: 3 },
-  { name: "打气筒", quantity: 3 },
-  { name: "细丝带", quantity: 1 },
-  { name: "药品", quantity: 1 },
-  { name: "红牛", quantity: 0.5 },
-  { name: "一次性湿巾", quantity: 1 },
-  { name: "书签", quantity: 2 },
-  { name: "明信片", quantity: 1 },
-  { name: "湿巾纸", quantity: 2 },
-  { name: "院旗", quantity: 3 },
-  { name: "获奖锦旗", quantity: 1 },
-  { name: "箭筒", quantity: 3 },
-  { name: "箭", quantity: 1 }
+  { name: "3袋气球", quantity: 1 },
+  { name: "3个打气筒", quantity: 1 },
+  { name: "1包细丝带", quantity: 1 },
+  { name: "1袋药品", quantity: 1 },
+  { name: "半箱红牛", quantity: 1 },
+  { name: "1箱一次性湿巾", quantity: 1 },
+  { name: "2盒书签", quantity: 1 },
+  { name: "1盒明信片", quantity: 1 },
+  { name: "2包湿巾纸", quantity: 1 },
+  { name: "3张院旗", quantity: 1 },
+  { name: "1面获奖锦旗", quantity: 1 },
+  { name: "3个箭筒", quantity: 1 },
+  { name: "1筒箭", quantity: 1 }
 ];
 
 export async function POST(request: Request) {
