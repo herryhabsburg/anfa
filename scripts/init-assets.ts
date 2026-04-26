@@ -49,12 +49,12 @@ async function main() {
       });
 
       // 创建初始库存记录
-      await prisma.stock.create({
+      await prisma.stockTransaction.create({
         data: {
           assetId: asset.id,
           quantity: assetData.quantity,
           type: "IN",
-          reason: "初始化库存"
+          note: "初始化库存"
         }
       });
 
