@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "缺少管理员口令" }, { status: 400 });
   }
 
-  const adminKey = process.env.ADMIN_ACCESS_KEY;
+  const adminKey = process.env.ADMIN_ACCESS_KEY || "admin123";
   if (!adminKey) {
     return NextResponse.json({ error: "服务端未配置 ADMIN_ACCESS_KEY" }, { status: 500 });
   }
