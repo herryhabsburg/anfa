@@ -210,11 +210,11 @@ export const ALL_DEPARTMENT_MEMBERS: Record<string, DepartmentMembers> = {
   },
   chairman: {
     leaders: [
-      { name: "都静雯", title: "主席" },
-      { name: "陈爱琳", title: "副主席" },
-      { name: "张婧熙", title: "副主席" },
-      { name: "樊晋辉", title: "副主席" },
-      { name: "李瞳", title: "副主席" },
+      { name: "都静雯", title: "主席", studentId: "2024212001" },
+      { name: "陈爱琳", title: "副主席", studentId: "2024212002" },
+      { name: "张婧熙", title: "副主席", studentId: "2024212003" },
+      { name: "樊晋辉", title: "副主席", studentId: "2024212004" },
+      { name: "李瞳", title: "副主席", studentId: "2024212005" },
     ],
     staffs: [],
   },
