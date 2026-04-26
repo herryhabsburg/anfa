@@ -51,10 +51,19 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
+  const [editingAsset, setEditingAsset] = useState<boolean>(false);
+  const [editName, setEditName] = useState("");
+  const [editModelOrSpec, setEditModelOrSpec] = useState("");
+  const [editUnit, setEditUnit] = useState("");
+  const [editCategoryId, setEditCategoryId] = useState("");
+  const [editAssetLoading, setEditAssetLoading] = useState(false);
+  const [editAssetError, setEditAssetError] = useState<string | null>(null);
+
   const [tab, setTab] = useState<StockType>("IN");
   const [quantity, setQuantity] = useState("");
   const [operator, setOperator] = useState("");
   const [note, setNote] = useState("");
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,11 +87,19 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
     };
   }, []);
 
+  async function loadCategories() {
+    const res = await fetch("/api/categories");
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error ?? "加载分类失败");
+    return data as { id: string; name: string }[];
+  }
+
   async function loadAll() {
-    const [assetRes, stockRes, txRes] = await Promise.all([
+    const [assetRes, stockRes, txRes, categoriesRes] = await Promise.all([
       fetch(`/api/assets/${assetId}`),
       fetch(`/api/assets/${assetId}/stock`),
       fetch(`/api/assets/${assetId}/transactions?page=1&pageSize=30`),
+      loadCategories(),
     ]);
 
     const assetData = await assetRes.json().catch(() => ({}));
@@ -96,6 +113,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
     setAsset(assetData as Asset);
     setStock((stockData as StockResp).stock);
     setTransactions((txData.transactions ?? []) as Transaction[]);
+    setCategories(categoriesRes);
   }
 
   useEffect(() => {
@@ -221,6 +239,73 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
     }
   }
 
+  function startEditAsset() {
+    if (!asset) return;
+    setEditingAsset(true);
+    setEditName(asset.name);
+    setEditModelOrSpec(asset.modelOrSpec ?? "");
+    setEditUnit(asset.unit ?? "");
+    setEditCategoryId(asset.categoryId);
+    setEditAssetLoading(false);
+    setEditAssetError(null);
+  }
+
+  function cancelEditAsset() {
+    setEditingAsset(false);
+    setEditName("");
+    setEditModelOrSpec("");
+    setEditUnit("");
+    setEditCategoryId("");
+    setEditAssetLoading(false);
+    setEditAssetError(null);
+  }
+
+  async function saveEditAsset(e: FormEvent) {
+    e.preventDefault();
+    setEditAssetError(null);
+
+    if (!canEdit) {
+      setEditAssetError("无权限：仅管理员可编辑物资信息");
+      return;
+    }
+
+    if (!editName.trim()) {
+      setEditAssetError("请输入物资名称");
+      return;
+    }
+
+    if (!editCategoryId) {
+      setEditAssetError("请选择分类");
+      return;
+    }
+
+    setEditAssetLoading(true);
+    try {
+      const payload = {
+        name: editName.trim(),
+        modelOrSpec: editModelOrSpec.trim() ? editModelOrSpec.trim() : null,
+        unit: editUnit.trim() ? editUnit.trim() : null,
+        categoryId: editCategoryId,
+      };
+
+      const res = await fetch(`/api/assets/${assetId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error ?? "更新失败");
+
+      cancelEditAsset();
+      await loadAll();
+    } catch (err) {
+      setEditAssetError(err instanceof Error ? err.message : "更新失败");
+    } finally {
+      setEditAssetLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -230,7 +315,18 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
               返回物资管理
             </Link>
           </div>
-          <h2 className="text-lg font-semibold mt-1">{asset?.name ?? "物资详情"}</h2>
+          <div className="flex items-center gap-3 mt-1">
+            <h2 className="text-lg font-semibold">{asset?.name ?? "物资详情"}</h2>
+            {canEdit && !editingAsset ? (
+              <button
+                type="button"
+                onClick={startEditAsset}
+                className="text-xs px-2 py-1 rounded-md border border-zinc-200 hover:bg-zinc-50"
+              >
+                编辑物资信息
+              </button>
+            ) : null}
+          </div>
           <div className="text-sm text-zinc-500 mt-1">
             {asset?.category?.name ? `分类：${asset.category.name}` : "—"}
             {asset?.modelOrSpec ? ` | 规格：${asset.modelOrSpec}` : ""}
@@ -261,6 +357,88 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
         <div className="rounded-2xl border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm">
           {error}
         </div>
+      ) : editingAsset ? (
+        <section className="rounded-2xl bg-white border border-zinc-200 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-zinc-200">
+            <div className="text-sm font-semibold">编辑物资信息</div>
+            <div className="text-xs text-zinc-500 mt-1">仅管理员可编辑物资基本信息</div>
+          </div>
+
+          <div className="p-5 space-y-4">
+            {editAssetError ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 text-red-700 px-3 py-2 text-sm">
+                {editAssetError}
+              </div>
+            ) : null}
+
+            <form onSubmit={saveEditAsset} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">物资名称</label>
+                <input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-zinc-200 px-3 py-2 outline-none focus:ring-2 focus:ring-zinc-300"
+                  placeholder="例如：投影仪"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">规格/型号（可选）</label>
+                <input
+                  value={editModelOrSpec}
+                  onChange={(e) => setEditModelOrSpec(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-zinc-200 px-3 py-2 outline-none focus:ring-2 focus:ring-zinc-300"
+                  placeholder="例如：EPSON-XYZ"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">单位（可选）</label>
+                <input
+                  value={editUnit}
+                  onChange={(e) => setEditUnit(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-zinc-200 px-3 py-2 outline-none focus:ring-2 focus:ring-zinc-300"
+                  placeholder="例如：台、件"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">分类</label>
+                <select
+                  value={editCategoryId}
+                  onChange={(e) => setEditCategoryId(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-zinc-200 px-3 py-2 outline-none focus:ring-2 focus:ring-zinc-300"
+                >
+                  <option value="" disabled>
+                    请选择分类
+                  </option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={editAssetLoading}
+                  className="flex-1 rounded-xl bg-zinc-900 text-white px-4 py-2 text-sm hover:bg-zinc-800 transition-colors disabled:opacity-60"
+                >
+                  {editAssetLoading ? "保存中…" : "保存修改"}
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelEditAsset}
+                  className="rounded-xl border border-zinc-200 px-4 py-2 text-sm hover:bg-zinc-50 transition-colors"
+                >
+                  取消
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <section className="rounded-2xl bg-white border border-zinc-200 shadow-sm overflow-hidden lg:col-span-2">

@@ -16,7 +16,7 @@ type Asset = {
   category?: { id: string; name: string } | null;
 };
 
-type Role = "admin" | "user";
+type Role = "admin" | "member" | "user";
 
 export default function AssetsPage() {
   const router = useRouter();
@@ -50,15 +50,20 @@ export default function AssetsPage() {
     async function run() {
       try {
         const res = await fetch("/api/auth/me");
-        const data = await res.json().catch(() => ({}));
+        console.log("Auth response status:", res.status);
+        const data = await res.json();
+        console.log("Auth response data:", data);
         if (cancelled) return;
-        if (res.ok && (data.role === "admin" || data.role === "user")) {
+        // 无论 res.ok 如何，只要 data.role 是有效的角色值，就更新角色
+        if (data.role === "admin" || data.role === "member" || data.role === "user") {
           setRole(data.role as Role);
+          console.log("Role updated to:", data.role);
         }
-      } catch {
-        // ignore
+      } catch (error) {
+        console.error("Error fetching auth status:", error);
       } finally {
         if (!cancelled) setAuthLoading(false);
+        console.log("Auth loading set to false");
       }
     }
     run();
@@ -349,22 +354,13 @@ export default function AssetsPage() {
                             详情
                           </Link>
                           {canEdit ? (
-                            <>
-                              <button
-                                type="button"
-                                className="text-xs px-2 py-1 rounded-md border border-zinc-200 hover:bg-zinc-50"
-                                onClick={() => startEdit(a)}
-                              >
-                                编辑
-                              </button>
-                              <button
-                                type="button"
-                                className="text-xs px-2 py-1 rounded-md border border-red-200 text-red-700 hover:bg-red-50"
-                                onClick={() => onDelete(a.id)}
-                              >
-                                删除
-                              </button>
-                            </>
+                            <button
+                              type="button"
+                              className="text-xs px-2 py-1 rounded-md border border-red-200 text-red-700 hover:bg-red-50"
+                              onClick={() => onDelete(a.id)}
+                            >
+                              删除
+                            </button>
                           ) : null}
                         </div>
                       </td>

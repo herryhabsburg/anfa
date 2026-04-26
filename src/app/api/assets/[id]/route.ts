@@ -4,7 +4,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { prisma } from "@/lib/prisma";
 import { assetSchema } from "@/lib/schemas";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdminFromRequest } from "@/lib/auth";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -24,7 +24,7 @@ export async function GET(_request: Request, { params }: Context) {
 }
 
 export async function PUT(request: Request, { params }: Context) {
-  const guard = await requireAdmin();
+  const guard = requireAdminFromRequest(request);
   if (guard) return guard;
 
   const id = (await params).id;
@@ -74,8 +74,8 @@ export async function PUT(request: Request, { params }: Context) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: Context) {
-  const guard = await requireAdmin();
+export async function DELETE(request: Request, { params }: Context) {
+  const guard = requireAdminFromRequest(request);
   if (guard) return guard;
 
   const id = (await params).id;
