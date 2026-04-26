@@ -56,9 +56,9 @@ export async function POST(request: Request) {
     const res = NextResponse.json({ ok: true, role: "admin" });
     res.cookies.set("inventory_role", "admin", {
       httpOnly: true,
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // 开发环境使用lax，生产环境使用none
+      sameSite: "lax", // 始终使用lax，避免跨域问题
       path: "/",
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // 不强制使用HTTPS
       maxAge: 60 * 60 * 24 * 7, // 7天过期
     });
     return res;
@@ -71,16 +71,16 @@ export async function POST(request: Request) {
   const res = NextResponse.json({ ok: true, role: "member" });
   res.cookies.set("inventory_role", "member", {
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // 开发环境使用lax，生产环境使用none
+    sameSite: "lax", // 始终使用lax，避免跨域问题
     path: "/",
-    secure: process.env.NODE_ENV === "production",
+    secure: false, // 不强制使用HTTPS
     maxAge: 60 * 60 * 24 * 7, // 7天过期
   });
   res.cookies.set("inventory_member_id", studentId, {
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // 开发环境使用lax，生产环境使用none
+    sameSite: "lax", // 始终使用lax，避免跨域问题
     path: "/",
-    secure: process.env.NODE_ENV === "production",
+    secure: false, // 不强制使用HTTPS
     maxAge: 60 * 60 * 24 * 7, // 7天过期
   });
   return res;
