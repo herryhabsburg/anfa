@@ -13,7 +13,7 @@ interface MemberInfo {
 function findMemberInfo(studentId: string): MemberInfo | null {
   for (const [deptSlug, dept] of Object.entries(ALL_DEPARTMENT_MEMBERS)) {
     const leader = dept.leaders.find(m => m.studentId === studentId);
-    if (leader) {
+    if (leader && leader.studentId) {
       const departmentName = DEPARTMENT_NAMES[deptSlug];
       return {
         studentId: leader.studentId,
@@ -25,7 +25,7 @@ function findMemberInfo(studentId: string): MemberInfo | null {
     }
 
     const staff = dept.staffs.find(m => m.studentId === studentId);
-    if (staff) {
+    if (staff && staff.studentId) {
       const departmentName = DEPARTMENT_NAMES[deptSlug];
       return {
         studentId: staff.studentId,
