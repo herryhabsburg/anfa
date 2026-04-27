@@ -18,7 +18,7 @@ function findMemberInfo(studentId: string): MemberInfo | null {
         studentId: leader.studentId,
         name: leader.name,
         position: leader.title,
-        department: DEPARTMENT_NAMES[deptSlug] ?? deptSlug,
+        department: DEPARTMENT_NAMES[deptSlug] || deptSlug,
         role: "admin",
       };
     }
@@ -29,7 +29,7 @@ function findMemberInfo(studentId: string): MemberInfo | null {
         studentId: staff.studentId,
         name: staff.name,
         position: staff.title,
-        department: DEPARTMENT_NAMES[deptSlug] ?? deptSlug,
+        department: DEPARTMENT_NAMES[deptSlug] || deptSlug,
         role: "member",
       };
     }
