@@ -79,6 +79,19 @@ export default function TopNav({ onOpenLogin }: { onOpenLogin: () => void }) {
             </Link>
           );
         })}
+        {authLoading ? null : role !== "user" && (
+          <Link
+            key="/member-center"
+            href="/member-center"
+            className={`px-3 py-2 rounded-full transition-colors ${
+              pathname === "/member-center"
+                ? "bg-zinc-100 text-zinc-950 font-medium"
+                : "hover:bg-zinc-100 text-zinc-80"
+            }`}
+          >
+            成员中心
+          </Link>
+        )}
       </nav>
 
       {authLoading ? null : role === "user" ? (

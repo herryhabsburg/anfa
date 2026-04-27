@@ -5,6 +5,18 @@ export type DepartmentMembers = {
   staffs: Member[];
 };
 
+export const DEPARTMENT_NAMES: Record<string, string> = {
+  qingnian: "青年志愿者协会",
+  wenwen: "文闻出版社",
+  office: "办公室",
+  tech: "技术部",
+  life: "生活权益部",
+  propaganda: "宣传部",
+  study: "学习部",
+  org: "组织部",
+  chairman: "主席团",
+};
+
 export const ALL_DEPARTMENT_MEMBERS: Record<string, DepartmentMembers> = {
   qingnian: {
     leaders: [

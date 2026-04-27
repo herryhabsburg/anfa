@@ -3,11 +3,12 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-type Member = {
+type MemberInfo = {
   studentId: string;
   name: string;
   position: string;
   department: string;
+  role: "admin" | "member";
 };
 
 export default function MemberCenterPage() {
@@ -15,7 +16,7 @@ export default function MemberCenterPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [member, setMember] = useState<Member | null>(null);
+  const [member, setMember] = useState<MemberInfo | null>(null);
 
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
@@ -31,14 +32,20 @@ export default function MemberCenterPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/members/me");
+        const res = await fetch("/api/members/center");
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data?.error ?? "加载失败");
+        if (!res.ok) {
+          if (res.status === 401) {
+            router.replace("/?login=true");
+            return;
+          }
+          throw new Error(data?.error ?? "加载失败");
+        }
         if (cancelled) return;
-        setMember((data.member ?? null) as Member | null);
-      } catch {
+        setMember((data.member ?? null) as MemberInfo | null);
+      } catch (err) {
         if (cancelled) return;
-        router.replace("/member-login");
+        setError(err instanceof Error ? err.message : "加载失败");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -87,8 +94,8 @@ export default function MemberCenterPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">个人信息</h1>
-        <div className="text-sm text-zinc-500 mt-2">登录后可查看个人信息，如需修改密码请点击下方按钮。</div>
+        <h1 className="text-2xl font-semibold">成员中心</h1>
+        <div className="text-sm text-zinc-500 mt-2">查看个人信息，修改登录密码</div>
       </div>
 
       {loading ? (
@@ -99,24 +106,30 @@ export default function MemberCenterPage() {
         <>
           <section className="rounded-2xl bg-white border border-zinc-200 shadow-sm overflow-hidden">
             <div className="p-5 border-b border-zinc-200">
-              <div className="text-sm font-semibold">你的信息</div>
+              <div className="text-sm font-semibold">个人信息</div>
             </div>
             <div className="p-5 space-y-3 text-sm text-zinc-700">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-zinc-500">姓名</span>
+                <span className="font-medium text-zinc-950">{member?.name ?? "-"}</span>
+              </div>
               <div className="flex items-center justify-between gap-4">
                 <span className="text-zinc-500">学号</span>
                 <span className="font-medium text-zinc-950">{member?.studentId ?? "-"}</span>
               </div>
               <div className="flex items-center justify-between gap-4">
-                <span className="text-zinc-500">姓名</span>
-                <span className="font-medium text-zinc-950">{member?.name ?? "-"}</span>
+                <span className="text-zinc-500">部门</span>
+                <span className="font-medium text-zinc-950">{member?.department ?? "-"}</span>
               </div>
               <div className="flex items-center justify-between gap-4">
                 <span className="text-zinc-500">职位</span>
                 <span className="font-medium text-zinc-950">{member?.position ?? "-"}</span>
               </div>
               <div className="flex items-center justify-between gap-4">
-                <span className="text-zinc-500">部门</span>
-                <span className="font-medium text-zinc-950">{member?.department ?? "-"}</span>
+                <span className="text-zinc-500">身份</span>
+                <span className="font-medium text-zinc-950">
+                  {member?.role === "admin" ? "负责人" : "干事"}
+                </span>
               </div>
             </div>
           </section>
@@ -156,7 +169,7 @@ export default function MemberCenterPage() {
                       value={oldPassword}
                       onChange={(e) => setOldPassword(e.target.value)}
                       className="mt-2 w-full rounded-xl border border-zinc-200 px-3 py-2 outline-none focus:ring-2 focus:ring-zinc-300"
-                      placeholder="请输入当前密码"
+                      placeholder="请输入当前密码（默认密码：123456）"
                     />
                   </div>
 

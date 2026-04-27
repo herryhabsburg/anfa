@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sha256Hex } from "@/lib/password";
+import { prisma } from "@/lib/prisma";
 import { ALL_DEPARTMENT_MEMBERS } from "@/lib/members-data";
 
 const ADMIN_SLUGS = ["chairman", "qingnian", "wenwen", "office", "tech", "life", "propaganda", "study", "org"];
@@ -24,6 +25,18 @@ function isStaffStudentId(studentId: string): boolean {
   return false;
 }
 
+async function getMemberPasswordHash(studentId: string): Promise<string> {
+  const memberPassword = await prisma.memberPassword.findUnique({
+    where: { studentId },
+  });
+
+  if (memberPassword) {
+    return memberPassword.passwordHash;
+  }
+
+  return sha256Hex("123456");
+}
+
 export async function POST(request: Request) {
   let data: unknown;
   try {
@@ -40,26 +53,33 @@ export async function POST(request: Request) {
   if (!studentId) return NextResponse.json({ error: "缺少学号" }, { status: 400 });
   if (!password) return NextResponse.json({ error: "缺少密码" }, { status: 400 });
 
-  const defaultPassword = "123456";
-  const hash = sha256Hex(password);
-  const defaultHash = sha256Hex(defaultPassword);
+  const passwordHash = await getMemberPasswordHash(studentId);
+  const inputHash = sha256Hex(password);
 
-  if (hash !== defaultHash) {
+  if (inputHash !== passwordHash) {
     return NextResponse.json({ error: "密码错误" }, { status: 401 });
   }
+
+  const res = NextResponse.json({ ok: true, role: role === "admin" ? "admin" : "member" });
 
   if (role === "admin") {
     if (!isAdminStudentId(studentId)) {
       return NextResponse.json({ error: "您不是负责人，无权登录" }, { status: 403 });
     }
 
-    const res = NextResponse.json({ ok: true, role: "admin" });
     res.cookies.set("inventory_role", "admin", {
       httpOnly: true,
-      sameSite: "lax", // 始终使用lax，避免跨域问题
+      sameSite: "lax",
       path: "/",
-      secure: false, // 不强制使用HTTPS
-      maxAge: 60 * 60 * 24 * 7, // 7天过期
+      secure: false,
+      maxAge: 60 * 60 * 24 * 7,
+    });
+    res.cookies.set("inventory_member_id", studentId, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      secure: false,
+      maxAge: 60 * 60 * 24 * 7,
     });
     return res;
   }
@@ -68,20 +88,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "您不是干事，无法登录" }, { status: 403 });
   }
 
-  const res = NextResponse.json({ ok: true, role: "member" });
   res.cookies.set("inventory_role", "member", {
     httpOnly: true,
-    sameSite: "lax", // 始终使用lax，避免跨域问题
+    sameSite: "lax",
     path: "/",
-    secure: false, // 不强制使用HTTPS
-    maxAge: 60 * 60 * 24 * 7, // 7天过期
+    secure: false,
+    maxAge: 60 * 60 * 24 * 7,
   });
   res.cookies.set("inventory_member_id", studentId, {
     httpOnly: true,
-    sameSite: "lax", // 始终使用lax，避免跨域问题
+    sameSite: "lax",
     path: "/",
-    secure: false, // 不强制使用HTTPS
-    maxAge: 60 * 60 * 24 * 7, // 7天过期
+    secure: false,
+    maxAge: 60 * 60 * 24 * 7,
   });
   return res;
 }

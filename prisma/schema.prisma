@@ -85,3 +85,10 @@ model Member {
 
   @@index([department])
 }
+
+model MemberPassword {
+  studentId   String   @id
+  passwordHash String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
