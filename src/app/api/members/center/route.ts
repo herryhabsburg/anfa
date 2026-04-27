@@ -14,22 +14,24 @@ function findMemberInfo(studentId: string): MemberInfo | null {
   for (const [deptSlug, dept] of Object.entries(ALL_DEPARTMENT_MEMBERS)) {
     const leader = dept.leaders.find(m => m.studentId === studentId);
     if (leader) {
+      const departmentName = DEPARTMENT_NAMES[deptSlug];
       return {
         studentId: leader.studentId,
         name: leader.name,
         position: leader.title,
-        department: DEPARTMENT_NAMES[deptSlug] || deptSlug,
+        department: departmentName !== undefined ? departmentName : deptSlug,
         role: "admin",
       };
     }
 
     const staff = dept.staffs.find(m => m.studentId === studentId);
     if (staff) {
+      const departmentName = DEPARTMENT_NAMES[deptSlug];
       return {
         studentId: staff.studentId,
         name: staff.name,
         position: staff.title,
-        department: DEPARTMENT_NAMES[deptSlug] || deptSlug,
+        department: departmentName !== undefined ? departmentName : deptSlug,
         role: "member",
       };
     }
